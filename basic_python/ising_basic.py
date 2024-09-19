@@ -23,7 +23,8 @@ import math
 import sys
 import time
 
-import cupy.cuda.curand as curand
+#import cupy.cuda.curand as curand
+import cupy
 from mpi4py import MPI
 from numba import cuda
 from numba import vectorize
@@ -153,19 +154,19 @@ def write_lattice(prefix, lattice_b, lattice_w):
 # Helper class for random number generation
 class curandUniformRNG:
     def __init__(self, seed=0):
-        rng = curand.createGenerator(curand.CURAND_RNG_PSEUDO_PHILOX4_32_10)
-        curand.setPseudoRandomGeneratorSeed(rng, seed)
+        rng = cupy.cuda.curand.createGenerator(cupy.cuda.curand.CURAND_RNG_PSEUDO_PHILOX4_32_10)
+        cupy.cuda.curand.setPseudoRandomGeneratorSeed(rng, seed)
         if (args.use_common_seed):
             self.offset = rank * lattice_slab_n * args.lattice_m // 2
-            curand.setGeneratorOffset(rng, self.offset)
+            cupy.cuda.curand.setGeneratorOffset(rng, self.offset)
         self._rng = rng
 
     def fill_random(self, arr):
         ptr = arr.__cuda_array_interface__['data'][0]
-        curand.generateUniform(self._rng, ptr, arr.size)
+        cupy.cuda.curand.generateUniform(self._rng, ptr, arr.size)
         if (args.use_common_seed):
             self.offset += args.lattice_n * args.lattice_m // 2
-            curand.setGeneratorOffset(self._rng, self.offset)
+            cupy.cuda.curand.setGeneratorOffset(self._rng, self.offset)
 
 # Helper function to perform device sync plus MPI barrier
 def sync():
